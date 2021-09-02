@@ -28,6 +28,8 @@ import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Implements testing of the CarController class.
  */
@@ -58,7 +60,7 @@ public class CarControllerTest {
     @Before
     public void setup() {
         Car car = getCar();
-        //car.setId(1L);
+        car.setId(1L);
         given(carService.save(any())).willReturn(car);
         given(carService.findById(any())).willReturn(car);
         given(carService.list()).willReturn(Collections.singletonList(car));
@@ -77,6 +79,10 @@ public class CarControllerTest {
                         .contentType(MediaType.APPLICATION_JSON_UTF8)
                         .accept(MediaType.APPLICATION_JSON_UTF8))
                 .andExpect(status().isCreated());
+        assertThat(car.getDetails().getManufacturer().getName()).isEqualTo("Chevrolet");
+        assertThat(car.getDetails().getModel()).isEqualTo("Impala");
+        assertThat(car.getDetails().getFuelType()).isEqualTo("Gasoline");
+        assertThat(car.getCondition()).isEqualTo(Condition.USED);
     }
 
     /**
@@ -93,9 +99,10 @@ public class CarControllerTest {
          */
 
         mvc.perform(get("/cars")
-                        .accept(MediaType.APPLICATION_JSON_UTF8))
-                .andExpect(status().isOk());
+                        .accept(MediaType.APPLICATION_JSON_UTF8)
+                        .contentType(MediaType.APPLICATION_JSON_UTF8))
 
+                .andExpect(status().isOk());
     }
 
     /**
@@ -134,6 +141,29 @@ public class CarControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    @Test
+    public void updateCar() throws Exception{
+
+        Car car = getCar();
+        Details details = car.getDetails();
+        details.setMileage(40000);
+        details.setExternalColor("black");
+        details.setBody("suv");
+        car.setDetails(details);
+        car.setCondition(Condition.NEW);
+        mvc.perform(put("/cars/{id}",car.getId())
+                .content(json.write(car).getJson())
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk());
+
+
+        assertThat(car.getDetails().getMileage()).isEqualTo(40000);
+        assertThat(car.getDetails().getExternalColor()).isEqualTo("black");
+        assertThat(car.getDetails().getBody()).isEqualTo("suv");
+        assertThat(car.getCondition()).isEqualTo(Condition.NEW);
+
+    }
     /**
      * Creates an example Car object for use in testing.
      *
